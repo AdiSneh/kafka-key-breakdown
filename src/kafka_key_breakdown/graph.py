@@ -19,6 +19,7 @@ def graph(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
     for key in all_keys:
         df[key] = df["Distribution"].apply(lambda c: c.get(key, 0))
 
+    plt.style.use("dark_background")
     plt.figure(figsize=(12, 6))
     for key in all_keys:
         plt.plot(df["Time"], df[key], label=key)
