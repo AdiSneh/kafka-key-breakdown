@@ -27,11 +27,7 @@ async def get_key_distribution_for_timespan(
     interval: timedelta,
     max_num_messages: int,
 ) -> dict[datetime, Counter[str]]:
-    consumer = AIOKafkaConsumer(
-        topic,
-        bootstrap_servers=bootstrap_servers,
-        group_id=consumer_group,
-    )
+    consumer = AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group)
     await consumer.start()
     # TODO: Make a context manager or some other nicer way to close the consumer
     try:
@@ -68,7 +64,8 @@ async def get_key_distribution_for_timespan(
         key_distribution = {
             t: (await get_key_distribution_by_offset(
                 topic_partition=topic_partition,
-                consumer=consumer,
+                bootstrap_servers=bootstrap_servers,
+                consumer_group=consumer_group,
                 offset=max(offset - num_messages_for_intervals[i], beginning_offset),
                 num_messages=num_messages_for_intervals[i],
             )) if num_messages_for_intervals[i] > 0 else Counter()
@@ -81,18 +78,25 @@ async def get_key_distribution_for_timespan(
 
 async def get_key_distribution_by_offset(
     topic_partition: TopicPartition,
-    consumer: AIOKafkaConsumer,
+    bootstrap_servers: str,
+    consumer_group: str,
     offset: int,
     num_messages: int,
 ) -> Counter[str] | None:
-    consumer.seek(topic_partition, offset)
-    messages = (
-        await consumer.getmany(
-            topic_partition,  # type: ignore
-            timeout_ms=1000,
-            max_records=num_messages,
-        )
-    )[topic_partition]
+    consumer = AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group)
+    await consumer.start()
+    try:
+        consumer.assign([topic_partition])
+        consumer.seek(topic_partition, offset)
+        messages = (
+            await consumer.getmany(
+                topic_partition,  # type: ignore
+                timeout_ms=1000,
+                max_records=num_messages,
+            )
+        )[topic_partition]
+    finally:
+        await consumer.stop()
     return Counter(m.key.decode() for m in messages)
 
 
