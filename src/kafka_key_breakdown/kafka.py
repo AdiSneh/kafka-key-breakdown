@@ -8,8 +8,7 @@ from .utils import gather_with_limit, range_datetime
 
 
 async def get_key_distribution_for_timespan(
-    topic: str,
-    partition: int,
+    topic_partition: TopicPartition,
     bootstrap_servers: str,
     consumer_group: str,
     start_time: datetime,
@@ -18,7 +17,6 @@ async def get_key_distribution_for_timespan(
     max_num_messages: int,
     concurrency_limit: int,
 ) -> dict[datetime, Counter[str]]:
-    topic_partition = TopicPartition(topic, partition)
     async with AIOKafkaConsumer(
         bootstrap_servers=bootstrap_servers, group_id=consumer_group
     ) as consumer:

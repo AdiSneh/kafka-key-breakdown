@@ -3,9 +3,19 @@ from datetime import datetime
 
 import pandas as pd
 from matplotlib import pyplot as plt
+from tabulate import tabulate
 
 
-def graph(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
+def display_all(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
+    display_table(interval_to_key_distribution)
+    display_graph(interval_to_key_distribution)
+
+
+def display_table(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
+    print(tabulate(interval_to_key_distribution.items(), headers=["Time", "Keys"]))
+
+
+def display_graph(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
     df = pd.DataFrame(
         {
             "Time": interval_to_key_distribution.keys(),
