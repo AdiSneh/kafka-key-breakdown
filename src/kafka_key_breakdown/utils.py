@@ -11,7 +11,9 @@ def range_datetime(start_time: datetime, end_time: datetime, step: timedelta) ->
     return [
         datetime.fromtimestamp(t)
         for t in range(
-            int(start_time.timestamp()), int(end_time.timestamp()), int(step.total_seconds())
+            int(start_time.timestamp()),
+            int(end_time.timestamp()),
+            int(step.total_seconds()),
         )
     ]
 

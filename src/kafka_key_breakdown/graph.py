@@ -6,10 +6,12 @@ from matplotlib import pyplot as plt
 
 
 def graph(interval_to_key_distribution: dict[datetime, Counter[str]]) -> None:
-    df = pd.DataFrame({
-        "Time": interval_to_key_distribution.keys(),
-        "Distribution": interval_to_key_distribution.values(),
-    })
+    df = pd.DataFrame(
+        {
+            "Time": interval_to_key_distribution.keys(),
+            "Distribution": interval_to_key_distribution.values(),
+        }
+    )
     df["Time"] = pd.to_datetime(df["Time"])
 
     all_keys = set()
