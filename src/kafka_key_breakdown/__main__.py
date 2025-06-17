@@ -61,16 +61,18 @@ async def get_key_distribution_for_timespan(
             min(d, max_num_messages)
             for d in consecutive_differences(offsets)
         ] + [min(end_offset - offsets[-1], max_num_messages)]
-        key_distribution = {
-            t: (await get_key_distribution_by_offset(
+        consume_coroutines = [
+            get_key_distribution_by_offset(
                 topic_partition=topic_partition,
                 bootstrap_servers=bootstrap_servers,
-                consumer_group=consumer_group,
+                consumer_group=f"{consumer_group}-{i}",
                 offset=max(offset - num_messages_for_intervals[i], beginning_offset),
                 num_messages=num_messages_for_intervals[i],
-            )) if num_messages_for_intervals[i] > 0 else Counter()
-            for i, (t, offset) in enumerate(offsets_for_intervals.items())
-        }
+            )
+            for i, offset in enumerate(offsets_for_intervals.values())
+        ]
+        futures = await asyncio.gather(*consume_coroutines)
+        key_distribution = dict(zip(intervals, futures))
     finally:
         await consumer.stop()
     return key_distribution
@@ -83,6 +85,8 @@ async def get_key_distribution_by_offset(
     offset: int,
     num_messages: int,
 ) -> Counter[str] | None:
+    if num_messages == 0:
+        return Counter()
     consumer = AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group)
     await consumer.start()
     try:
