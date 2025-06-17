@@ -3,11 +3,10 @@ import sys
 from collections import Counter
 from datetime import datetime, timedelta
 
-from confluent_kafka import Consumer, TopicPartition, OFFSET_END
-from tabulate import tabulate
+from confluent_kafka import Consumer, OFFSET_END, TopicPartition
 
+from .graph import graph
 from .utils import consecutive_differences, range_datetime
-
 
 log = logging.Logger("Kafka Key Breakdown")
 handler = logging.StreamHandler(sys.stdout)
@@ -26,7 +25,7 @@ def get_key_distribution_for_timespan(
     end_time: datetime,
     interval: timedelta,
     max_num_messages: int,
-) -> dict[datetime, Counter[bytes]]:
+) -> dict[datetime, Counter[str]]:
     consumer = Consumer(
         **{
             "bootstrap.servers": bootstrap_servers,
@@ -75,25 +74,22 @@ def get_key_distribution_by_offset(
     consumer: Consumer,
     offset: int,
     num_messages: int,
-) -> Counter[bytes] | None:
+) -> Counter[str] | None:
     consumer.assign([TopicPartition(topic, partition, offset=offset)])
     messages = consumer.consume(num_messages=num_messages, timeout=1)
-    return Counter(m.key() for m in messages)
+    return Counter(m.key().decode() for m in messages)
 
 
 if __name__ == '__main__':
-    print(
-        tabulate(
-            get_key_distribution_for_timespan(
-                topic="adi",
-                partition=0,
-                bootstrap_servers="localhost:9092",
-                consumer_group="adi",
-                start_time=datetime(2025, 6, 17, 15, 0, 34),
-                end_time=datetime(2025, 6, 17, 15, 17, 34),
-                interval=timedelta(minutes=1),
-                max_num_messages=10,
-            ).items(),
-            headers=["Time", "Key Distribution"]
+    graph(
+        get_key_distribution_for_timespan(
+            topic="adi",
+            partition=0,
+            bootstrap_servers="localhost:9092",
+            consumer_group="adi",
+            start_time=datetime(2025, 6, 17, 15, 0, 34),
+            end_time=datetime(2025, 6, 17, 15, 17, 34),
+            interval=timedelta(minutes=1),
+            max_num_messages=50,
         )
     )
