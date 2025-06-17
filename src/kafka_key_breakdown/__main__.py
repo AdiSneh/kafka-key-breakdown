@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from aiokafka import AIOKafkaConsumer, TopicPartition
 
 from .graph import graph
-from .utils import consecutive_differences, range_datetime
+from .utils import consecutive_differences, gather_with_limit, range_datetime
 
 log = logging.Logger("Kafka Key Breakdown")
 handler = logging.StreamHandler(sys.stdout)
@@ -26,14 +26,13 @@ async def get_key_distribution_for_timespan(
     end_time: datetime,
     interval: timedelta,
     max_num_messages: int,
+    concurrency_limit: int,
 ) -> dict[datetime, Counter[str]]:
-    consumer = AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group)
-    await consumer.start()
-    # TODO: Make a context manager or some other nicer way to close the consumer
-    try:
-        intervals = range_datetime(start_time, end_time, interval)
-        offsets_for_intervals = dict()
-        topic_partition = TopicPartition(topic, partition)
+    intervals = range_datetime(start_time, end_time, interval)
+    offsets_for_intervals = dict()
+    topic_partition = TopicPartition(topic, partition)
+
+    async with AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group) as consumer:
         beginning_offset = (await consumer.beginning_offsets([topic_partition]))[topic_partition]
         end_offset = (await consumer.end_offsets([topic_partition]))[topic_partition]
         for t in intervals:
@@ -53,29 +52,27 @@ async def get_key_distribution_for_timespan(
                 )
             else:
                 offsets_for_intervals[t] = offset_and_timestamp.offset
-        if not offsets_for_intervals:
-            return dict()
 
-        offsets = list(offsets_for_intervals.values())
-        num_messages_for_intervals = [
-            min(d, max_num_messages)
-            for d in consecutive_differences(offsets)
-        ] + [min(end_offset - offsets[-1], max_num_messages)]
-        consume_coroutines = [
-            get_key_distribution_by_offset(
-                topic_partition=topic_partition,
-                bootstrap_servers=bootstrap_servers,
-                consumer_group=f"{consumer_group}-{i}",
-                offset=max(offset - num_messages_for_intervals[i], beginning_offset),
-                num_messages=num_messages_for_intervals[i],
-            )
-            for i, offset in enumerate(offsets_for_intervals.values())
-        ]
-        futures = await asyncio.gather(*consume_coroutines)
-        key_distribution = dict(zip(intervals, futures))
-    finally:
-        await consumer.stop()
-    return key_distribution
+    if not offsets_for_intervals:
+        return dict()
+
+    offsets = list(offsets_for_intervals.values())
+    num_messages_for_intervals = [
+        min(d, max_num_messages)
+        for d in consecutive_differences(offsets)
+    ] + [min(end_offset - offsets[-1], max_num_messages)]
+    consume_coroutines = [
+        get_key_distribution_by_offset(
+            topic_partition=topic_partition,
+            bootstrap_servers=bootstrap_servers,
+            consumer_group=f"{consumer_group}-{i % concurrency_limit}",
+            offset=max(offset - num_messages_for_intervals[i], beginning_offset),
+            num_messages=num_messages_for_intervals[i],
+        )
+        for i, offset in enumerate(offsets_for_intervals.values())
+    ]
+    results = await gather_with_limit(*consume_coroutines, limit=concurrency_limit)
+    return dict(zip(intervals, results))
 
 
 async def get_key_distribution_by_offset(
@@ -87,9 +84,7 @@ async def get_key_distribution_by_offset(
 ) -> Counter[str] | None:
     if num_messages == 0:
         return Counter()
-    consumer = AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group)
-    await consumer.start()
-    try:
+    async with AIOKafkaConsumer(bootstrap_servers=bootstrap_servers, group_id=consumer_group) as consumer:
         consumer.assign([topic_partition])
         consumer.seek(topic_partition, offset)
         messages = (
@@ -99,8 +94,6 @@ async def get_key_distribution_by_offset(
                 max_records=num_messages,
             )
         )[topic_partition]
-    finally:
-        await consumer.stop()
     return Counter(m.key.decode() for m in messages)
 
 
@@ -111,9 +104,10 @@ if __name__ == '__main__':
             partition=0,
             bootstrap_servers="localhost:9092",
             consumer_group="adi",
-            start_time=datetime(2025, 6, 17, 19, 39, 0),
-            end_time=datetime(2025, 6, 17, 19, 49, 40),
-            interval=timedelta(minutes=1),
-            max_num_messages=50,
+            start_time=datetime(2025, 6, 17, 22, 45, 0),
+            end_time=datetime(2025, 6, 17, 23, 40, 0),
+            interval=timedelta(seconds=30),
+            max_num_messages=10000,
+            concurrency_limit=10,
         ))
     )
