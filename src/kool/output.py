@@ -34,11 +34,13 @@ def display_graph(interval_to_key_distribution: dict[datetime, Counter[str]]) ->
     plt.style.use("dark_background")
     plt.figure(figsize=(12, 6))
     for key in all_keys:
-        plt.plot(df["Time"], df[key], label=key)
+        plt.plot(df["Time"], df[key], label=key, linewidth=3)
 
-    plt.xlabel("Time")
-    plt.ylabel("Count")
-    plt.title("Kafka Key Distribution Over Time")
+    ax = plt.gca()
+    ax.set_facecolor("#0a141a")
+    plt.xlabel("Time", fontweight="bold")
+    plt.ylabel("Count", fontweight="bold")
+    plt.title("Kafka Key Distribution Over Time", fontweight="bold")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
