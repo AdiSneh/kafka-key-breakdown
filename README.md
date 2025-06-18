@@ -1,4 +1,4 @@
-# Kool
+![](./resources/logo.png "Kool")
 
 #### Welcome to *Kool*, your friendly neighborhood *Kafka tool*!
 
