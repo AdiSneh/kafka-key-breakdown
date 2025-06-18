@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Coroutine
 
@@ -8,7 +8,50 @@ from .logger import log
 from .utils import gather_with_limit, range_datetime
 
 
-async def get_key_distribution_for_timespan(
+async def get_topic_key_distribution_for_timespan(
+    topic: str,
+    bootstrap_servers: str,
+    consumer_group: str,
+    start_time: datetime,
+    end_time: datetime,
+    interval: timedelta,
+    max_num_messages: int,
+    concurrency_limit: int,
+) -> dict[datetime, Counter[str]]:
+    async with AIOKafkaConsumer(
+        bootstrap_servers=bootstrap_servers, group_id=consumer_group
+    ) as consumer:
+        partitions = consumer.partitions_for_topic(topic)
+
+    partition_to_time_to_consume_coroutine = dict()
+    for partition in partitions:
+        partition_to_time_to_consume_coroutine[
+            partition
+        ] = await get_key_distribution_for_timespan_coroutines(
+            topic_partition=TopicPartition(topic, partition),
+            bootstrap_servers=bootstrap_servers,
+            consumer_group=consumer_group,
+            start_time=start_time,
+            end_time=end_time,
+            interval=interval,
+            max_num_messages=max_num_messages,
+            concurrency_limit=concurrency_limit,
+        )
+
+    all_coroutines = sum(
+        [list(d.values()) for d in partition_to_time_to_consume_coroutine.values()], start=[]
+    )
+    all_respective_times = sum(
+        [list(d.keys()) for d in partition_to_time_to_consume_coroutine.values()], start=[]
+    )
+    results = await gather_with_limit(*all_coroutines, limit=concurrency_limit)
+    time_to_key_counter = defaultdict(Counter)
+    for time, result in zip(all_respective_times, results):
+        time_to_key_counter[time] += result
+    return time_to_key_counter
+
+
+async def get_partition_key_distribution_for_timespan(
     topic_partition: TopicPartition,
     bootstrap_servers: str,
     consumer_group: str,
@@ -51,9 +94,13 @@ async def get_key_distribution_for_timespan_coroutines(
         first_offset = (await consumer.beginning_offsets([topic_partition]))[topic_partition]
         last_offset = (await consumer.end_offsets([topic_partition]))[topic_partition]
         time_to_offset = await _get_time_to_offset(
-            consumer=consumer, topic_partition=topic_partition, start_time=start_time,
-            end_time=end_time, interval=interval, first_offset=first_offset
-            )
+            consumer=consumer,
+            topic_partition=topic_partition,
+            start_time=start_time,
+            end_time=end_time,
+            interval=interval,
+            first_offset=first_offset,
+        )
     if not time_to_offset:
         return dict()
 

@@ -6,7 +6,10 @@ from aiokafka import TopicPartition
 from typer import Typer
 
 from .output import display_graph, display_table, display_all
-from .kafka import get_key_distribution_for_timespan
+from .kafka import (
+    get_partition_key_distribution_for_timespan,
+    get_topic_key_distribution_for_timespan,
+)
 
 
 app = Typer()
@@ -28,9 +31,9 @@ OUTPUT_TO_DISPLAY_FUNCTION = {
 @app.command()
 def count_keys(
     topic: str,
-    partition: int,
     start_time: datetime,
     end_time: datetime,
+    partition: int | None = None,
     # TODO: Auto-generate the consumer group with a unique hash suffix or something
     consumer_group: str = "adi",
     bootstrap_servers: str = "localhost:9092",
@@ -39,8 +42,19 @@ def count_keys(
     concurrency_limit: int = 10,
     output: Output = Output.ALL,
 ):
-    key_distribution = asyncio.run(
-        get_key_distribution_for_timespan(
+    if partition is None:
+        coroutine = get_topic_key_distribution_for_timespan(
+            topic=topic,
+            bootstrap_servers=bootstrap_servers,
+            consumer_group=consumer_group,
+            start_time=start_time,
+            end_time=end_time,
+            interval=timedelta(seconds=interval_seconds),
+            max_num_messages=max_num_messages,
+            concurrency_limit=concurrency_limit,
+        )
+    else:
+        coroutine = get_partition_key_distribution_for_timespan(
             topic_partition=TopicPartition(topic, partition),
             bootstrap_servers=bootstrap_servers,
             consumer_group=consumer_group,
@@ -50,7 +64,7 @@ def count_keys(
             max_num_messages=max_num_messages,
             concurrency_limit=concurrency_limit,
         )
-    )
+    key_distribution = asyncio.run(coroutine)
     OUTPUT_TO_DISPLAY_FUNCTION[output](key_distribution)
 
 
