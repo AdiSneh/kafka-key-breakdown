@@ -1,8 +1,6 @@
-INTERPRETER ?= uv run python
-
-.PHONY: run
-run:
-	$(INTERPRETER) -m src.kafka_key_breakdown
+.PHONY: install
+install:
+	uv sync
 
 .PHONY: format
 format:
@@ -11,3 +9,11 @@ format:
 .PHONY: lint
 lint:
 	uvx ruff check
+
+.PHONY: dev
+dev:
+	docker-compose up --force-recreate
+
+.PHONY: dev-down
+dev-down:
+	docker-compose down

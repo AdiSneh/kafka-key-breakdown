@@ -1,7 +1,7 @@
 [project]
-name = "kafka-key-breakdown"
+name = "kool"
 version = "0.1.0"
-description = "Add your description here"
+description = "Your friendly neighborhood Kafka tool!"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -17,6 +17,12 @@ dependencies = [
 dev = [
     "ipykernel>=6.29.5",
 ]
+
+[project.scripts]
+kool = "kool.cli:app"
+
+[tool.uv]
+package = true
 
 [tool.ruff]
 line-length = 100

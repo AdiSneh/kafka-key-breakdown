@@ -8,6 +8,7 @@ from typer import Typer
 from .output import display_graph, display_table, display_all
 from .kafka import get_key_distribution_for_timespan
 
+
 app = Typer()
 
 

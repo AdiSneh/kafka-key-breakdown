@@ -378,37 +378,6 @@ wheels = [
 ]
 
 [[package]]
-name = "kafka-key-breakdown"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "aiokafka" },
-    { name = "matplotlib" },
-    { name = "more-itertools" },
-    { name = "pandas" },
-    { name = "tabulate" },
-    { name = "typer" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipykernel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiokafka", specifier = ">=0.12.0" },
-    { name = "matplotlib", specifier = ">=3.10.3" },
-    { name = "more-itertools", specifier = ">=10.7.0" },
-    { name = "pandas", specifier = ">=2.3.0" },
-    { name = "tabulate", specifier = ">=0.9.0" },
-    { name = "typer", specifier = ">=0.16.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "ipykernel", specifier = ">=6.29.5" }]
-
-[[package]]
 name = "kiwisolver"
 version = "1.4.8"
 source = { registry = "https://pypi.org/simple" }
@@ -473,6 +442,37 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d9/d4/3c9735faa36ac591a4afcc2980d2691000506050b7a7e80bcfe44048daa7/kiwisolver-1.4.8-cp313-cp313t-musllinux_1_2_s390x.whl", hash = "sha256:577facaa411c10421314598b50413aa1ebcf5126f704f1e5d72d7e4e9f020d90", size = 2546710, upload-time = "2024-12-24T18:30:37.281Z" },
     { url = "https://files.pythonhosted.org/packages/4c/fa/be89a49c640930180657482a74970cdcf6f7072c8d2471e1babe17a222dc/kiwisolver-1.4.8-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:be4816dc51c8a471749d664161b434912eee82f2ea66bd7628bd14583a833e85", size = 2349213, upload-time = "2024-12-24T18:30:40.019Z" },
 ]
+
+[[package]]
+name = "kool"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aiokafka" },
+    { name = "matplotlib" },
+    { name = "more-itertools" },
+    { name = "pandas" },
+    { name = "tabulate" },
+    { name = "typer" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipykernel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiokafka", specifier = ">=0.12.0" },
+    { name = "matplotlib", specifier = ">=3.10.3" },
+    { name = "more-itertools", specifier = ">=10.7.0" },
+    { name = "pandas", specifier = ">=2.3.0" },
+    { name = "tabulate", specifier = ">=0.9.0" },
+    { name = "typer", specifier = ">=0.16.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ipykernel", specifier = ">=6.29.5" }]
 
 [[package]]
 name = "markdown-it-py"

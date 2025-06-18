@@ -66,12 +66,12 @@ async def _get_intervals_to_offsets(
             await consumer.offsets_for_times({topic_partition: int(t.timestamp() * 1000)})
         )[topic_partition]
         if offset_and_timestamp is None:
-            log.warning(
+            log.debug(
                 f"Timestamp {t} is later than the latest record time in {topic_partition}. "
                 f"Skipping."
             )
         elif offset_and_timestamp.offset == first_offset:
-            log.warning(
+            log.debug(
                 f"Timestamp {t} yielded the same offset as the first record in topic partition "
                 f"{topic_partition}, meaning that the timestamp is probably earlier than the "
                 f"earliest record time. Skipping."
