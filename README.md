@@ -29,7 +29,7 @@ uv sync
 
 ### CLI Usage Example
 ```bash
-uv run kool adi 0 2025-06-18T15:00:30 2025-06-18T15:05:00
+uv run kool adi 2025-06-18T15:00:30 2025-06-18T15:05:00
 ```
 ![](./resources/graph.png "Kafka Key Distribution Graph")
 ![](./resources/table.png "Kafka Key Distribution Table")
