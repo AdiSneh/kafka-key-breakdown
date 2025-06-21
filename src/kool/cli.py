@@ -1,4 +1,5 @@
 import asyncio
+import socket
 from datetime import datetime, timedelta
 from enum import Enum
 
@@ -33,10 +34,9 @@ def count_keys(
     topic: str,
     start_time: datetime,
     end_time: datetime,
-    partition: int | None = None,
-    # TODO: Auto-generate the consumer group with a unique hash suffix or something
-    consumer_group: str = "adi",
     bootstrap_servers: str = "localhost:9092",
+    partition: int | None = None,
+    consumer_group: str | None = None,
     interval_seconds: int = 30,
     max_num_messages: int = 1000,
     concurrency_limit: int = 10,
@@ -46,7 +46,7 @@ def count_keys(
         coroutine = get_topic_key_distribution_for_timespan(
             topic=topic,
             bootstrap_servers=bootstrap_servers,
-            consumer_group=consumer_group,
+            consumer_group=consumer_group or socket.gethostname(),
             start_time=start_time,
             end_time=end_time,
             interval=timedelta(seconds=interval_seconds),
@@ -57,7 +57,7 @@ def count_keys(
         coroutine = get_partition_key_distribution_for_timespan(
             topic_partition=TopicPartition(topic, partition),
             bootstrap_servers=bootstrap_servers,
-            consumer_group=consumer_group,
+            consumer_group=consumer_group or socket.gethostname(),
             start_time=start_time,
             end_time=end_time,
             interval=timedelta(seconds=interval_seconds),
